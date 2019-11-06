@@ -11,6 +11,11 @@ all: fuzzer
 # NOTE bls disable not necessary here
 # worth putting a dummy in for a consistent makefile?
 
+prysm.a: prysm/fuzz.go
+	test $(GO_FUZZ_BUILD_PATH)
+	cd prysm && "$(GO_FUZZ_BUILD_PATH)" -libfuzzer-prefix=shuffle_ -libfuzzer-ex -o ../prysm.a .
+
+
 lighthouse.a : lighthouse $(lighthouse_dir_contents) $(CARGO_CONFIG_PATH)
 	rm -rf lighthouse.a
 	rm -rf lighthouse_out/
@@ -33,7 +38,7 @@ zrnt.a : zrnt/fuzz.go
 # https://stackoverflow.com/questions/11647859/make-targets-depend-on-variables
 # TODO move LDFLAGS before and use LDLIBS for all -llibname flags
 # TODO how to split up the PYTHON_LD_FLAGS?
-fuzzer : fuzzer.cpp zrnt.a lighthouse.a
+fuzzer : fuzzer.cpp zrnt.a lighthouse.a prysm.a
 	test -d $(TRINITY_VENV_PATH)
 	test -d $(PY_SPEC_VENV_PATH)
 	$(CXX) $(CXXFLAGS) -fsanitize=fuzzer -std=c++17 \
