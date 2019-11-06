@@ -105,6 +105,25 @@ mv zrnt "$ZRNT_GOPATH"/src/github.com/protolambda/
 
 cd /eth2 || exit
 rm -rf $ZRNT_TMP
+
+
+PRYSM_GOPATH="/eth2/prysm_gopath"
+PRYSM_TMP="/eth2/prysm_tmp"
+mkdir -p "$PRYSM_TMP"/src/
+cd "$PRYSM_TMP" || exit
+git clone --depth 1 https://github.com/prysmaticlabs/prysm.git
+cd prysm
+
+GO111MODULE="on" go mod vendor
+mkdir -p "$PRYSM_GOPATH"
+mv vendor/*/ "$PRYSM_GOPATH"/src/
+rm -rf vendor
+mkdir -p "$PRYSM_GOPATH"/src/github.com/prysmaticlabs
+cd .. || exit
+mv prysm "$PRYSM_GOPATH"/src/github.com/prysmaticlabs/
+
+cd /eth2 || exit
+rm -rf $PRYSM_TMP
 # Now ZRNT_GOPATH contains (only) zrnt and all its dependencies.
 
 export GOPATH="$GOROOT"/packages
@@ -130,6 +149,8 @@ GO_FUZZ_BUILD_PATH=$(realpath go-fuzz-build)
 export GO_FUZZ_BUILD_PATH
 
 export GOPATH="$GOPATH:/eth2/lib/go:$ZRNT_GOPATH"
+export GOPATH="$GOPATH:$PRYSM_GOPATH"
+
 
 echo "Saving exported env to /eth2/exported_env.sh"
 export -p >/eth2/exported_env.sh
@@ -138,7 +159,11 @@ cd /eth2/fuzzers || exit
 # Recursively make all fuzzers
 # TODO or exit?
 
+env > /eth2/env1.txt
+
 make all "-j$(nproc)"
+
+env > /eth2/env2.txt
 
 # Find fuzzers, copy them over
 #find . -type f ! -name '*.*' -executable -exec cp {} /eth2/out \;
