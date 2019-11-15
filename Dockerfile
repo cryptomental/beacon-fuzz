@@ -7,12 +7,19 @@ RUN apt-get install -y build-essential clang-8 git zlib1g-dev libssl-dev libboos
 # TODO trinity has cmake in its dockerfile, needed?
 RUN apt-get install -y libleveldb1v5 libleveldb-dev libgmp3-dev libsnappy-dev
 
+# install bazel - could pull their image but want to keep it all available on 18.04
+RUN echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list \
+&& curl https://bazel.build/bazel-release.pub.gpg | apt-key add -
+RUN apt-get update && apt-get install -y bazel
+
 RUN wget -q https://dl.google.com/go/go1.12.linux-amd64.tar.gz
 RUN tar -zxf go1.12.linux-amd64.tar.gz
+
 
 # To clear cache when branch updates
 ADD https://api.github.com/repos/gnattishness/cpython/git/refs/heads/fuzzing meta/cpython_version.json
 RUN git clone --branch fuzzing --depth 1 https://github.com/gnattishness/cpython.git
+
 
 # TODO use tag when possible
 # This is a tag, so fine to always cache

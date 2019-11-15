@@ -8,12 +8,10 @@ lighthouse_dir_contents := $(shell find $(here)/lighthouse | sed 's/ /\\ /g')
 .PHONY: all
 all: fuzzer
 
+zrnt_prefix := shuffle_
+prysm_prefix := prysm_shuffle_
 # NOTE bls disable not necessary here
 # worth putting a dummy in for a consistent makefile?
-
-prysm.a: prysm/fuzz.go
-	test $(GO_FUZZ_BUILD_PATH)
-	cd prysm && "$(GO_FUZZ_BUILD_PATH)" -libfuzzer-prefix=shuffle_ -libfuzzer-ex -o ../prysm.a .
 
 
 lighthouse.a : lighthouse $(lighthouse_dir_contents) $(CARGO_CONFIG_PATH)
@@ -28,9 +26,15 @@ lighthouse.a : lighthouse $(lighthouse_dir_contents) $(CARGO_CONFIG_PATH)
 		--release
 	cp lighthouse_out/release/deps/libswap_or_not_shuffle_fuzzer-*.a lighthouse.a
 
+prysm.a : export GO_PATH := $(COMMON_GOPATH):$(PRYSM_GOPATH)
+prysm.a: prysm/fuzz.go
+	test $(GO_FUZZ_BUILD_PATH)
+	cd prysm && "$(GO_FUZZ_BUILD_PATH)" -libfuzzer-prefix=$(prysm_prefix) -libfuzzer-ex -o ../prysm.a .
+
+zrnt.a : export GO_PATH := $(COMMON_GOPATH):$(ZRNT_GOPATH)
 zrnt.a : zrnt/fuzz.go
 	test -x $(GO_FUZZ_BUILD_PATH)
-	cd zrnt && "$(GO_FUZZ_BUILD_PATH)" -tags preset_mainnet -libfuzzer-prefix=shuffle_ -libfuzzer-ex -o ../zrnt.a .
+	cd zrnt && "$(GO_FUZZ_BUILD_PATH)" -tags preset_mainnet -libfuzzer-prefix=$(zrnt_prefix) -libfuzzer-ex -o ../zrnt.a .
 
 # TODO(gnattishness) make fuzzer rule only link/load, so theres a fuzzer.o rule
 
@@ -46,7 +50,7 @@ fuzzer : fuzzer.cpp zrnt.a lighthouse.a prysm.a
 	    -DPY_SPEC_VENV_PATH="\"$(PY_SPEC_VENV_PATH)\"" \
 	    -DTRINITY_HARNESS_PATH="\"$(TRINITY_HARNESS_PATH)\"" \
 	    -DTRINITY_VENV_PATH="\"$(TRINITY_VENV_PATH)\"" \
-	    fuzzer.cpp zrnt.a lighthouse.a \
+	    fuzzer.cpp zrnt.a lighthouse.a prysm.a \
 	    $(LDFLAGS) $(LDLIBS) $(PYTHON_LD_FLAGS) -o fuzzer
 
 .PHONY: clean

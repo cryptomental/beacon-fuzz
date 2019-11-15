@@ -1,7 +1,7 @@
-#define GO_FUZZ_PREFIX shuffle_
 #include <assert.h>
 #include <lib/differential.h>
 #include <lib/go.h>
+#include <lib/prysm.h>
 #include <lib/python.h>
 #include <lib/rust.h>
 
@@ -70,8 +70,9 @@ class Lighthouse : public Rust {
 } /* namespace fuzzing */
 
 std::shared_ptr<fuzzing::Python> pyspec = nullptr;
-std::shared_ptr<fuzzing::Python> trinity = nullptr;
 std::shared_ptr<fuzzing::Go> go = nullptr;
+std::shared_ptr<fuzzing::Prysm> prysm = nullptr;
+std::shared_ptr<fuzzing::Python> trinity = nullptr;
 std::shared_ptr<fuzzing::Lighthouse> lighthouse = nullptr;
 
 std::unique_ptr<fuzzing::Differential> differential = nullptr;
@@ -90,7 +91,25 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
   */
   differential->AddModule(lighthouse = std::make_shared<fuzzing::Lighthouse>());
 
-  return 0;
+    // if the program name is the path to a python binary in a venv containing relevant dependencies,
+    // these dependencies will be accessible
+    differential->AddModule(
+            pyspec = std::make_shared<fuzzing::Python>(PYTHON_HARNESS_BIN, PYTHON_HARNESS_PATH)
+    );
+
+    differential->AddModule(
+            gospec = std::make_shared<fuzzing::Go>()
+    );
+
+    differential->AddModule(
+            lighthouse = std::make_shared<fuzzing::Lighthouse_Shuffle>()
+    );
+
+    differential->AddModule(
+            prysm = std::make_shared<fuzzing::Prysm>()
+    );
+
+    return 0;
 }
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
