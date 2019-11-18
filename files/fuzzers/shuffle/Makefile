@@ -26,12 +26,12 @@ lighthouse.a : lighthouse $(lighthouse_dir_contents) $(CARGO_CONFIG_PATH)
 		--release
 	cp lighthouse_out/release/deps/libswap_or_not_shuffle_fuzzer-*.a lighthouse.a
 
-prysm.a : export GO_PATH := $(COMMON_GOPATH):$(PRYSM_GOPATH)
-prysm.a: prysm/fuzz.go
+prysm.a : export GOPATH := $(COMMON_GOPATH):$(PRYSM_GOPATH)
+prysm.a : prysm/fuzz.go
 	test $(GO_FUZZ_BUILD_PATH)
 	cd prysm && "$(GO_FUZZ_BUILD_PATH)" -libfuzzer-prefix=$(prysm_prefix) -libfuzzer-ex -o ../prysm.a .
 
-zrnt.a : export GO_PATH := $(COMMON_GOPATH):$(ZRNT_GOPATH)
+zrnt.a : export GOPATH := $(COMMON_GOPATH):$(ZRNT_GOPATH)
 zrnt.a : zrnt/fuzz.go
 	test -x $(GO_FUZZ_BUILD_PATH)
 	cd zrnt && "$(GO_FUZZ_BUILD_PATH)" -tags preset_mainnet -libfuzzer-prefix=$(zrnt_prefix) -libfuzzer-ex -o ../zrnt.a .
