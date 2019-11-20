@@ -30,11 +30,15 @@ prysm.a : export GOPATH := $(COMMON_GOPATH):$(PRYSM_GOPATH)
 prysm.a : prysm/fuzz.go
 	test $(GO_FUZZ_BUILD_PATH)
 	cd prysm && "$(GO_FUZZ_BUILD_PATH)" -libfuzzer-prefix=$(prysm_prefix) -libfuzzer-ex -o ../prysm.a .
+	# Do the dodgy to avoid name clashes
+	objcopy --prefix-symbols=prysm_ prysm.a
 
 zrnt.a : export GOPATH := $(COMMON_GOPATH):$(ZRNT_GOPATH)
 zrnt.a : zrnt/fuzz.go
 	test -x $(GO_FUZZ_BUILD_PATH)
 	cd zrnt && "$(GO_FUZZ_BUILD_PATH)" -tags preset_mainnet -libfuzzer-prefix=$(zrnt_prefix) -libfuzzer-ex -o ../zrnt.a .
+	# Do the dodgy to avoid name clashes
+	objcopy --prefix-symbols=zrnt_ zrnt.a
 
 # TODO(gnattishness) make fuzzer rule only link/load, so theres a fuzzer.o rule
 

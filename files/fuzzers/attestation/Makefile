@@ -1,5 +1,7 @@
 here := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 
+zrnt_prefix := shuffle_
+prysm_prefix := prysm_shuffle_
 PY_SPEC_HARNESS_PATH := $(here)/pyspec/harness.py
 TRINITY_HARNESS_PATH := $(here)/trinity/harness.py
 
