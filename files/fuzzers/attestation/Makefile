@@ -1,9 +1,9 @@
-here := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+attestation_root := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 
-PY_SPEC_HARNESS_PATH := $(here)/pyspec/harness.py
-TRINITY_HARNESS_PATH := $(here)/trinity/harness.py
+lighthouse_dir_contents := $(shell find $(attestation_root)/lighthouse | sed 's/ /\\ /g')
 
-lighthouse_dir_contents := $(shell find $(here)/lighthouse | sed 's/ /\\ /g')
+zrnt_prefix := shuffle_
+prysm_prefix := prysm_shuffle_
 
 .PHONY: all
 all: fuzzer

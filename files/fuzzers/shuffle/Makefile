@@ -30,11 +30,15 @@ prysm.a : export GOPATH := $(COMMON_GOPATH):$(PRYSM_GOPATH)
 prysm.a : prysm/fuzz.go
 	test $(GO_FUZZ_BUILD_PATH)
 	cd prysm && "$(GO_FUZZ_BUILD_PATH)" -libfuzzer-prefix=$(prysm_prefix) -libfuzzer-ex -o ../prysm.a .
+	# Do the dodgy to avoid name clashes
+	objcopy --prefix-symbols=prysm_ prysm.a
 
 zrnt.a : export GOPATH := $(COMMON_GOPATH):$(ZRNT_GOPATH)
 zrnt.a : zrnt/fuzz.go
 	test -x $(GO_FUZZ_BUILD_PATH)
 	cd zrnt && "$(GO_FUZZ_BUILD_PATH)" -tags preset_mainnet -libfuzzer-prefix=$(zrnt_prefix) -libfuzzer-ex -o ../zrnt.a .
+	# Do the dodgy to avoid name clashes
+	objcopy --prefix-symbols=zrnt_ zrnt.a
 
 # TODO(gnattishness) make fuzzer rule only link/load, so theres a fuzzer.o rule
 
@@ -44,17 +48,8 @@ fuzzer : fuzzer.cpp zrnt.a lighthouse.a# TODO move LDFLAGS before and use LDLIBS
 # TODO how to split up the PYTHON_LD_FLAGS?
 fuzzer : fuzzer.cpp zrnt.a lighthouse.a prysm.a
 	test $(shuffle_root)
-	$(CXX) $(CXXFLAGS) -fsanitize=fuzzer -std=c++17 -DPYTHON_HARNESS_PATH="\"$(PY_SPEC_HARNESS_PATH)\"" -DPYTHON_HARNESS_BIN="\"$(PY_SPEC_BIN_PATH)\"" -DPRYSM_FUZZ_PREFIX=$(prysm_prefix) -DGO_FUZZ_PREFIX=$(zrnt_prefix) fuzzer.cpp zrnt.a lighthouse.a $(LDFLAGS) $(PYTHON_LD_FLAGS) -o fuzzer
-	test -d $(TRINITY_VENV_PATH)
-	test -d $(PY_SPEC_VENV_PATH)
-	$(CXX) $(CXXFLAGS) -fsanitize=fuzzer -std=c++17 \
-	    -DPY_SPEC_HARNESS_PATH="\"$(PY_SPEC_HARNESS_PATH)\"" \
-	    -DPY_SPEC_VENV_PATH="\"$(PY_SPEC_VENV_PATH)\"" \
-	    -DTRINITY_HARNESS_PATH="\"$(TRINITY_HARNESS_PATH)\"" \
-	    -DTRINITY_VENV_PATH="\"$(TRINITY_VENV_PATH)\"" \
-	    fuzzer.cpp zrnt.a lighthouse.a \
-	    $(LDFLAGS) $(LDLIBS) $(PYTHON_LD_FLAGS) -o fuzzer
+	$(CXX) $(CXXFLAGS) -fsanitize=fuzzer -std=c++17 -DPYTHON_HARNESS_PATH="\"$(PY_SPEC_HARNESS_PATH)\"" -DPYTHON_HARNESS_BIN="\"$(PY_SPEC_BIN_PATH)\"" -DPRYSM_FUZZ_PREFIX=prysm_$(prysm_prefix) -DGO_FUZZ_PREFIX=zrnt_$(zrnt_prefix) fuzzer.cpp zrnt.a lighthouse.a prysm.a $(LDFLAGS) $(PYTHON_LD_FLAGS) -o fuzzer
 
 .PHONY: clean
 clean:
-	rm -rf fuzzer zrnt.a lighthouse.a lighthouse_out
+	rm -rf fuzzer prysm.a zrnt.a pyspec/eth2_specs lighthouse_out lighthouse.a
