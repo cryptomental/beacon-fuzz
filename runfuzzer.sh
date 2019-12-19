@@ -12,6 +12,12 @@ STATE_CORPUS_PATH="$(realpath -e "$3")"
 # Ensure we are in the same directory as this script (the project root).
 cd "$(dirname "${BASH_SOURCE[0]}")" || exit
 
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$CURRENT_BRANCH}" == "master" ]; then
+    docker build . -t eth2-fuzzers
+else
+    docker build . -t eth2-fuzzers-$CURRENT_BRANCH
+fi
 # Check that $1 points to an actual fuzzing target
 if [[ -z "$1" || (! -d "./files/fuzzers/$1") ]]; then
     echo "First argument must point to a valid fuzzing target."
