@@ -12,6 +12,14 @@ STATE_CORPUS_PATH="$(realpath -e "$3")"
 # Ensure we are in the same directory as this script (the project root).
 cd "$(dirname "${BASH_SOURCE[0]}")" || exit
 
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$CURRENT_BRANCH}" == "master" ]; then
+    DOCKER_IMAGE=eth-fuzzers
+else
+    DOCKER_IMAGE=eth2-fuzzers-$CURRENT_BRANCH
+fi
+docker build . -t $DOCKER_IMAGE
+
 # Check that $1 points to an actual fuzzing target
 if [[ -z "$1" || (! -d "./files/fuzzers/$1") ]]; then
     echo "First argument must point to a valid fuzzing target."
@@ -27,5 +35,5 @@ docker build . -t eth2-fuzzers || exit
 docker run \
     -v "$FUZZER_CORPUS":/eth2/corpus \
     -v "$STATE_CORPUS_PATH":/eth2/state-corpus \
-    -t eth2-fuzzers /bin/sh -c \
+    -t $DOCKER_IMAGE /bin/sh -c \
     "export ETH2_FUZZER_STATE_CORPUS_PATH=/eth2/state-corpus && /eth2/fuzzers/\"$1\"/fuzzer /eth2/corpus $REMAINING_ARGS"
