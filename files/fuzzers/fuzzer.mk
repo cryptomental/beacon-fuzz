@@ -168,7 +168,7 @@ fuzzer.o : fuzzer.cpp
 	    -DTRINITY_VENV_PATH="\"$(TRINITY_VENV_PATH)\"" \
 		-c fuzzer.cpp -o fuzzer.o
 
-fuzzer : LDFLAGS += $(NIM_LDFLAGS)
+fuzzer : LDFLAGS += -L$(here) $(NIM_LDFLAGS)
 fuzzer : LDLIBS += $(NIM_LDLIBS)
 fuzzer : fuzzer.o libzrnt.so libprysm.so lighthouse.a
 	$(CXX) -fsanitize=fuzzer \
