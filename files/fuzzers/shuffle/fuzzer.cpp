@@ -1,9 +1,12 @@
 #define GO_FUZZ_PREFIX shuffle_
+#define PRYSM_FUZZ_PREFIX prysm_shuffle_
+
 #include <assert.h>
 #include <lib/bfuzz_config.h>
 #include <lib/differential.h>
 #include <lib/go.h>
 #include <lib/nim.h>
+#include <lib/prysm.h>
 #include <lib/python.h>
 #include <lib/rust.h>
 #include <lib/util.h>
@@ -104,10 +107,11 @@ class Nimbus : public Nim {
     // of 0..N
     if (nfuzz_shuffle(seed, output.data(), output.size()) == false) {
       // Nimbus shuffle function failed
-
+      free(seed);
       return std::nullopt;
     }
 
+    free(seed);
     return util::VecToLittleEndianBytes(output);
   }
 };
@@ -119,6 +123,7 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
   differential = std::make_unique<fuzzing::Differential>();
 
   differential->AddModule(std::make_shared<fuzzing::Go>("zrnt"));
+  differential->AddModule(std::make_shared<fuzzing::Prysm>("prysm"));
   differential->AddModule(std::make_shared<fuzzing::Python>(
       "pyspec", (*argv)[0], PY_SPEC_HARNESS_PATH, std::nullopt,
       PY_SPEC_VENV_PATH, fuzzing::config::disable_bls));
