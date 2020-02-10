@@ -70,6 +70,7 @@ lighthouse_dir_contents := $(shell find $(here)/lighthouse | sed 's/ /\\ /g')
 # the name of the current directory
 target_name ?= $(lastword $(subst /, ,$(realpath $(here))))
 zrnt_prefix ?= $(target_name)_
+prysm_prefix := prysm_$(target_name)_
 lighthouse_package_name ?= $(target_name)_fuzzer
 
 # check that required variables are set
@@ -86,6 +87,9 @@ required_variables += PY_SPEC_VENV_PATH
 endif
 ifndef BFUZZ_TRINITY_OFF
 required_variables += TRINITY_VENV_PATH
+endif
+ifndef BFUZZ_PRYSM_OFF
+required_variables += prysm_prefix GO_FUZZ_BUILD_PATH
 endif
 ifndef BFUZZ_ZRNT_OFF
 required_variables += zrnt_prefix GO_FUZZ_BUILD_PATH
@@ -104,6 +108,27 @@ zrnt.a : zrnt/fuzz.go
 		$(GO_FUZZ_BUILD_PATH) -tags 'preset_mainnet$(if $(BFUZZ_NO_DISABLE_BLS),, bls_off)' \
 		-libfuzzer-prefix=$(zrnt_prefix) -libfuzzer-ex \
 		-o ../zrnt.a .
+
+prysm.a : prysm/fuzz.go
+	test -x $(GO_FUZZ_BUILD_PATH)
+	cd prysm && \
+		$(GO_FUZZ_BUILD_PATH) -tags 'preset_mainnet$(if $(BFUZZ_NO_DISABLE_BLS),, bls_off)' \
+		-libfuzzer-prefix=$(prysm_prefix) -libfuzzer-ex \
+		-o ../prysm.a .
+
+libzrnt.so : zrnt/fuzz.go
+	test -x $(GO_FUZZ_BUILD_PATH)
+	cd zrnt && \
+		$(GO_FUZZ_BUILD_PATH) -tags 'preset_mainnet$(if $(BFUZZ_NO_DISABLE_BLS),, bls_off)' \
+		-libfuzzer-prefix=$(zrnt_prefix) -libfuzzer-ex -libfuzzer-cshared \
+		-o ../zrnt.a .
+
+libprysm.so : prysm/fuzz.go
+	test -x $(GO_FUZZ_BUILD_PATH)
+	cd prysm && \
+		$(GO_FUZZ_BUILD_PATH) -tags 'preset_mainnet$(if $(BFUZZ_NO_DISABLE_BLS),, bls_off)' \
+		-libfuzzer-prefix=$(prysm_prefix) -libfuzzer-ex -libfuzzer-cshared \
+		-o ../prysm.a .
 
 lighthouse.a : lighthouse $(lighthouse_dir_contents) $(CARGO_CONFIG_PATH)
 	rm -rf lighthouse.a
@@ -145,13 +170,13 @@ fuzzer.o : fuzzer.cpp
 
 fuzzer : LDFLAGS += $(NIM_LDFLAGS)
 fuzzer : LDLIBS += $(NIM_LDLIBS)
-fuzzer : fuzzer.o zrnt.a lighthouse.a
+fuzzer : fuzzer.o libzrnt.so libprysm.so lighthouse.a
 	$(CXX) -fsanitize=fuzzer \
-	    fuzzer.o zrnt.a lighthouse.a \
+	    fuzzer.o -lzrnt -lprysm lighthouse.a \
 	    $(LDFLAGS) $(LDLIBS) $(PYTHON_LDFLAGS) -o fuzzer
 
 clean:
-	rm -rf fuzzer *.a *.o lighthouse_out
+	rm -rf fuzzer *.a *.o *.so lighthouse_out
 
 mostlyclean:
 	@# only clean executable and .o files
