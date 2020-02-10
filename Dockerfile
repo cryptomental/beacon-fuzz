@@ -10,6 +10,11 @@ RUN apt-get install -y libleveldb1v5 libleveldb-dev libgmp3-dev libsnappy-dev
 # For nimbus
 RUN apt-get install -y librocksdb-dev libpcre3-dev
 
+# Install bazel for Prysm- could pull their image but want to keep it all available on 18.04
+RUN echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list \
+&& curl https://bazel.build/bazel-release.pub.gpg | apt-key add -
+RUN apt-get update && apt-get install -y bazel
+
 RUN wget -q https://dl.google.com/go/go1.12.linux-amd64.tar.gz
 RUN tar -zxf go1.12.linux-amd64.tar.gz
 
