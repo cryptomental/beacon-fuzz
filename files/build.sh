@@ -35,7 +35,7 @@ cd "$ETH2_SPECS_PATH" || exit
 make pyspec
 export PY_SPEC_VENV_PATH="$ETH2_SPECS_PATH"/venv
 # TODO still delete and start from scratch?
-rm -rf "$PY_SPEC_VENV_PATH"
+#rm -rf "$PY_SPEC_VENV_PATH"
 "$CPYTHON_INSTALL_PATH"/bin/python3 -m venv "$PY_SPEC_VENV_PATH"
 "$PY_SPEC_VENV_PATH"/bin/pip install --upgrade pip
 cd "$ETH2_SPECS_PATH"/test_libs/pyspec || exit
@@ -58,7 +58,7 @@ cd /eth2/trinity || exit
 git checkout fcea7124effca010db62bd41a24dd7975825ba90 || exit
 export TRINITY_VENV_PATH="/eth2/trinity/venv"
 # TODO still delete and start from scratch?
-rm -rf "$TRINITY_VENV_PATH"
+#rm -rf "$TRINITY_VENV_PATH"
 "$CPYTHON_INSTALL_PATH"/bin/python3 -m venv "$TRINITY_VENV_PATH"
 "$TRINITY_VENV_PATH"/bin/pip install --upgrade pip
 "$TRINITY_VENV_PATH"/bin/pip install .
@@ -112,8 +112,8 @@ export GO111MODULE="off" # not supported by go-fuzz, keep it off unless explicit
 ZRNT_GOPATH="/eth2/zrnt_gopath/"
 ZRNT_TMP="/eth2/zrnt_tmp/"
 # TODO choose to error or remove if these paths already exist?
-rm -rf "$ZRNT_GOPATH"
-rm -rf "$ZRNT_TMP"
+#rm -rf "$ZRNT_GOPATH"
+#rm -rf "$ZRNT_TMP"
 mkdir -p "$ZRNT_TMP"
 cd "$ZRNT_TMP" || exit
 git clone --depth 1 --branch v0.9.1 https://github.com/protolambda/zrnt.git
@@ -129,15 +129,29 @@ GO111MODULE="on" go mod vendor
 mkdir -p "$ZRNT_GOPATH"/src/
 # TODO does this copy the file or only the directories? i.e. does */ do any different to *?
 mv vendor/*/ "$ZRNT_GOPATH"/src/
-rm -rf vendor
+#rm -rf vendor
 mkdir -p "$ZRNT_GOPATH"/src/github.com/protolambda
 cd .. || exit
 mv zrnt "$ZRNT_GOPATH"/src/github.com/protolambda/
 
 cd /eth2 || exit
-rm -rf $ZRNT_TMP
+#rm -rf $ZRNT_TMP
 # Now ZRNT_GOPATH contains (only) zrnt and all its dependencies.
 
+# Build prysm go_path
+# TODO remove fork
+# git clone --depth 1 https://github.com/prysmaticlabs/prysm.git
+git clone --depth 1 --branch go_path_rules https://github.com/gnattishness/prysm.git
+export PRYSM_ROOT="/eth2/prysm"
+cd $PRYSM_ROOT || exit
+
+bazel build --define ssz=mainnet --jobs=auto "//beacon-chain:go_path"
+PRYSM_GOPATH="$(realpath -e ./bazel-bin/beacon-chain/go_path)" || exit
+# Add link to main directory, so easier for interactive use
+ln -s "$PRYSM_GOPATH" /eth2/prysm_gopath
+export PRYSM_GOPATH
+
+cd /eth2 || exit
 export GOPATH="$GOROOT"/packages
 mkdir "$GOPATH"
 export PATH="$GOPATH/bin:$PATH"
@@ -145,7 +159,7 @@ export PATH="$GOPATH/bin:$PATH"
 # Get custom go-fuzz
 mkdir -p "$GOPATH"/src/github.com/dvyukov
 cd "$GOPATH"/src/github.com/dvyukov || exit
-git clone https://github.com/guidovranken/go-fuzz.git
+git clone https://github.com/cryptomental/go-fuzz.git
 cd go-fuzz || exit
 git checkout libfuzzer-extensions
 
@@ -160,7 +174,7 @@ go build github.com/dvyukov/go-fuzz/go-fuzz-build
 GO_FUZZ_BUILD_PATH=$(realpath go-fuzz-build)
 export GO_FUZZ_BUILD_PATH
 
-export GOPATH="$GOPATH:/eth2/lib/go:$ZRNT_GOPATH"
+export GOPATH="$GOPATH:/eth2/lib/go:$ZRNT_GOPATH:$PRYSM_GOPATH"
 
 echo "Saving exported env to /eth2/exported_env.sh"
 export -p >/eth2/exported_env.sh
