@@ -121,14 +121,14 @@ libzrnt.so : zrnt/fuzz.go
 	cd zrnt && \
 		$(GO_FUZZ_BUILD_PATH) -tags 'preset_mainnet$(if $(BFUZZ_NO_DISABLE_BLS),, bls_off)' \
 		-libfuzzer-prefix=$(zrnt_prefix) -libfuzzer-ex -libfuzzer-cshared \
-		-o ../zrnt.a .
+		-o ../libzrnt.so .
 
 libprysm.so : prysm/fuzz.go
 	test -x $(GO_FUZZ_BUILD_PATH)
 	cd prysm && \
 		$(GO_FUZZ_BUILD_PATH) -tags 'preset_mainnet$(if $(BFUZZ_NO_DISABLE_BLS),, bls_off)' \
 		-libfuzzer-prefix=$(prysm_prefix) -libfuzzer-ex -libfuzzer-cshared \
-		-o ../prysm.a .
+		-o ../libprysm.so .
 
 lighthouse.a : lighthouse $(lighthouse_dir_contents) $(CARGO_CONFIG_PATH)
 	rm -rf lighthouse.a
