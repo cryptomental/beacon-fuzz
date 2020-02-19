@@ -67,9 +67,10 @@ export TRINITY_BIN_PATH="$TRINITY_VENV_PATH"/bin/python3
 
 # Nimbus
 
-git clone --branch libnfuzz https://github.com/status-im/nim-beacon-chain.git /eth2/nim-beacon-chain
+git clone --branch libnfuzz https://github.com/cryptomental/nim-beacon-chain.git /eth2/nim-beacon-chain
 cd /eth2/nim-beacon-chain || exit
 make build-system-checks
+
 # Nim staticlib call uses llvm-ar and doesn't look like it can be changed
 # https://github.com/nim-lang/Nim/blob/7e747d11c66405f08cc7c69e5afc18348663275e/compiler/extccomp.nim#L128
 # This works at least for Ubuntu 18.04 with clang-8 installed, but likely less than portable:
@@ -89,8 +90,8 @@ EXTRA_NIM_PATH="$(dirname "$(realpath "$(command -v clang-8)")")"
 # TODO(gnattishness) if we use a static lib, no linking happens right? so don't need to pass load flags
 # NOTE: -d:release should be fine currently, looks like it mainly turns on optimizations, shouldn't disable checks
 PATH="$EXTRA_NIM_PATH:$PATH" \
-    NIMFLAGS="--cc:clang --passC:'-fsanitize=fuzzer-no-link' -d:chronicles_log_level=ERROR -d:release -d:const_preset=mainnet --lineTrace:on --opt:speed" \
-    make libnfuzz.a || exit
+    NIMFLAGS="--cc:clang --passC:'-fsanitize=fuzzer-no-link' --app:lib --noMain -d:chronicles_log_level=ERROR -d:debug --debugger:native -d:const_preset=mainnet --lineTrace:on --opt:none" \
+    make libnfuzz.so || exit
 export NIM_LDFLAGS="-L/eth2/nim-beacon-chain/build/"
 export NIM_LDLIBS="-lnfuzz -lrocksdb -lpcre"
 # TODO(gnattishness) why use nfuzz/libnfuzz.h over nimcache/libnfuzz_static/libnfuzz.h (generated via --header)?
